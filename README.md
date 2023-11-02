@@ -12,7 +12,7 @@ If you do not have any of these things, get them.
 ## Step 1: Getting Legendary
 Legendary is an open-source command line version of the Epic games launcher. In this tutorial, we will use a modified version of it that I made.
 
-Go to https://github.com/NotLawson/rocketleague-steam and follow the instructions to download.
+Go to <https://github.com/NotLawson/rocketleague-steam> and follow the instructions to download.
 Once downloaded, unzip the folder and open the command prompt.
 
 `python -m pip install .`
