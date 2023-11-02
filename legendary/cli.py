@@ -104,11 +104,11 @@ class LegendaryCLI:
 
                 if not egl_wine_pfx:
                     logger.info('Please enter the path to the Wine prefix that has EGL installed')
-                    egl_wine_pfx = input('Path [empty input to quit]: ').strip()
-                    if not egl_wine_pfx:
+                    wine_pfx = input('Path [empty input to quit]: ').strip()
+                    if not wine_pfx:
                         print('Empty input, quitting...')
                         exit(0)
-                    if not os.path.exists(egl_wine_pfx) and os.path.isdir(egl_wine_pfx):
+                    if not os.path.exists(wine_pfx) and os.path.isdir(wine_pfx):
                         print('Path is invalid (does not exist)!')
                         exit(1)
 
@@ -371,8 +371,6 @@ class LegendaryCLI:
 
         if args.install_tag:
             files = [fm for fm in files if args.install_tag in fm.install_tags]
-        elif args.install_tag is not None:
-            files = [fm for fm in files if not fm.install_tags]
 
         if args.hashlist:
             for fm in files:
@@ -581,8 +579,8 @@ class LegendaryCLI:
             logger.error(f'Game {app_name} is not currently installed!')
             exit(1)
 
-        if igame.is_dlc and not igame.executable:
-            logger.error(f'{app_name} is DLC without an executable; please launch the base game instead!')
+        if igame.is_dlc:
+            logger.error(f'{app_name} is DLC; please launch the base game instead!')
             exit(1)
 
         if not os.path.exists(igame.install_path):
@@ -703,7 +701,11 @@ class LegendaryCLI:
             if params.environment:
                 logger.debug('Environment overrides: {}'.format(', '.join(
                     f'{k}={v}' for k, v in params.environment.items())))
-            subprocess.Popen(full_params, cwd=params.working_directory, env=full_env)
+            #subprocess.Popen(full_params, cwd=params.working_directory, env=full_env)
+            p = subprocess.Popen(full_params, cwd=params.working_directory, env=full_env)
+            if args.wait:
+                logger.debug('Waiting for program to finish...')
+                p.wait()
 
     def _launch_origin(self, args):
         game = self.core.get_game(app_name=args.app_name)
@@ -781,8 +783,6 @@ class LegendaryCLI:
                          f'wrapper in the configuration file or command line. See the README for details.')
             return
 
-        # You cannot launch a URI without start.exe
-        command.append('start')
         command.append(origin_uri)
         if args.dry_run:
             if cmd:
@@ -913,7 +913,7 @@ class LegendaryCLI:
             if config_tags:
                 self.core.lgd.config.remove_option(game.app_name, 'install_tags')
                 config_tags = None
-            self.core.lgd.config.set(game.app_name, 'disable_sdl', 'true')
+            self.core.lgd.config.set(game.app_name, 'disable_sdl', True)
             sdl_enabled = False
         # just disable SDL, but keep config tags that have been manually specified
         elif config_disable_sdl or args.disable_sdl:
@@ -967,8 +967,7 @@ class LegendaryCLI:
                                                           disable_delta=args.disable_delta,
                                                           override_delta_manifest=args.override_delta_manifest,
                                                           preferred_cdn=args.preferred_cdn,
-                                                          disable_https=args.disable_https,
-                                                          bind_ip=args.bind_ip)
+                                                          disable_https=args.disable_https)
 
         # game is either up-to-date or hasn't changed, so we have nothing to do
         if not analysis.dl_size:
@@ -988,10 +987,6 @@ class LegendaryCLI:
                 self.logger.info('Deleting now untagged files.')
                 self.core.uninstall_tag(old_igame)
                 self.core.install_game(old_igame)
-
-            if old_igame.install_tags:
-                self.core.lgd.config.set(game.app_name, 'install_tags', ','.join(old_igame.install_tags))
-                self.core.lgd.save_config()
 
             # check if the version changed, this can happen for DLC that gets a version bump with no actual file changes
             if old_igame and old_igame.version != igame.version:
@@ -1234,7 +1229,7 @@ class LegendaryCLI:
                        key=lambda a: a.filename.lower())
 
         # build list of hashes
-        if (config_tags := self.core.lgd.config.get(args.app_name, 'install_tags', fallback=None)) is not None:
+        if config_tags := self.core.lgd.config.get(args.app_name, 'install_tags', fallback=None):
             install_tags = set(i.strip() for i in config_tags.split(','))
             file_list = [
                 (f.filename, f.sha_hash.hex())
@@ -1685,7 +1680,7 @@ class LegendaryCLI:
             # Find custom launch options, if available
             launch_options = []
             i = 1
-            while f'extraLaunchOption_{i:03d}_Name' in game.metadata.get('customAttributes', {}):
+            while f'extraLaunchOption_{i:03d}_Name' in game.metadata['customAttributes']:
                 launch_options.append((
                     game.metadata['customAttributes'][f'extraLaunchOption_{i:03d}_Name']['value'],
                     game.metadata['customAttributes'][f'extraLaunchOption_{i:03d}_Args']['value']
@@ -2783,8 +2778,6 @@ def main():
                                 help='Automatically install all DLCs with the base game')
     install_parser.add_argument('--skip-dlcs', dest='skip_dlcs', action='store_true',
                                 help='Do not ask about installing DLCs.')
-    install_parser.add_argument('--bind', dest='bind_ip', action='store', metavar='<IPs>', type=str,
-                                help='Comma-separated list of IPs to bind to for downloading')
 
     uninstall_parser.add_argument('--keep-files', dest='keep_files', action='store_true',
                                   help='Keep files but remove game from Legendary database')
@@ -2814,6 +2807,7 @@ def main():
                                help='Launch Origin to activate or run the game.')
     launch_parser.add_argument('--json', dest='json', action='store_true',
                                help='Print launch information as JSON and exit')
+    launch_parser.add_argument('--wait', dest='wait', action='store_true', help='Wait for the game to finish running')
 
     if os.name != 'nt':
         launch_parser.add_argument('--wine', dest='wine_bin', action='store', metavar='<wine binary>',
