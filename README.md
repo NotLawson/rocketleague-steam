@@ -1,6 +1,10 @@
 # Steam Rocket League adoption
 how to get rocket league on steam
 
+## NOTE:
+I am currently trying to make this a program you can import via Steam immediately.
+Bare with me.
+
 ## Requirements
  - Steam account and desktop app
  - Epic Games account (Note: you do not need the Epic Games launcher for this tutorial)
