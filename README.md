@@ -1,6 +1,9 @@
 # Steam Rocket League adoption
 how to get rocket league on steam
 
+## EVEN MORE IMPORTANT THAN BELOW
+I recently found a pretty nice project called [BoilR](https://github.com/PhilipK/BoilR) that is waaaaay better than this. Use that instead unless you really want to. Cheers
+
 ## NOTE:
 I am currently trying to make this a program you can import via Steam immediately.
 Bare with me.
